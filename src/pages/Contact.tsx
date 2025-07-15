@@ -24,7 +24,9 @@ const Contact = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
+        mode: 'cors',
         body: JSON.stringify({
           name: formData.name,
           email: formData.email,
@@ -35,7 +37,8 @@ const Contact = () => {
       });
 
       if (!response.ok) {
-        throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
+        const errorText = await response.text();
+        throw new Error(`Server error (${response.status}): ${errorText || response.statusText}`);
       }
 
       setSubmitStatus('success');
@@ -43,11 +46,14 @@ const Contact = () => {
     } catch (error) {
       console.error('Error submitting form:', error);
       setSubmitStatus('error');
-      setErrorMessage(
-        error instanceof Error 
-          ? `Failed to send message: ${error.message}` 
-          : 'There was an error sending your message. Please try again later.'
-      );
+      
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        setErrorMessage('Network error: Unable to connect to the server. Please check your internet connection and try again.');
+      } else if (error instanceof Error) {
+        setErrorMessage(`Failed to send message: ${error.message}`);
+      } else {
+        setErrorMessage('There was an error sending your message. Please try again later.');
+      }
     } finally {
       setIsSubmitting(false);
     }
